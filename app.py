@@ -39,11 +39,11 @@ def post():
         url = request.args.get("url")
         description = request.args.get("description")
         if None in (title, url):
-            return "Non nullable items are empty"
+            return "Non nullable items are empty", 400
 
         dup_title = MemeTemplate.query.filter_by(title=title).first()
         if dup_title:
-            return f"duplicate title {title}"
+            return f"duplicate title {title}", 409
 
         meme_template = MemeTemplate(title=title, description=description, url=url)
         db.session.add(meme_template)
@@ -59,11 +59,11 @@ def update():
         description = request.args.get("description")
         item_id = request.args.get("id")
         if None in (item_id, title, url):
-            return "Not nullable item is empty"
+            return "Not nullable item is empty", 400
 
         dup_title = MemeTemplate.query.filter_by(title=title).first()
         if dup_title and dup_title.id != item_id:
-            return f"duplicate title {title}"
+            return f"duplicate title {title}", 409
 
         meme_template = MemeTemplate.query.get(item_id)
         meme_template.title = title
@@ -78,7 +78,7 @@ def delete():
     if request.method == "POST":
         item_id = request.args.get("id")
         if not item_id:
-            return "No item id provided"
+            return "No item id provided", 400
 
         meme_template = MemeTemplate.query.get(item_id)
         if meme_template:
@@ -86,8 +86,8 @@ def delete():
             db.session.commit()
             return f"deleted item {item_id}"
         else:
-            return f"No obj with that id: {item_id}"
+            return f"No obj with that id: {item_id}", 404
 
-        return f"unknown error cant delete item_id:{item_id}"
+        return f"unknown error cant delete item_id:{item_id}", 500
 
     return "this is delete endpoint"
