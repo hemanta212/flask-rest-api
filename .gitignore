@@ -3,3 +3,5 @@
 *.swo
 .vscode
 secrets.json
+__pycache__
+.pyc
