@@ -62,7 +62,7 @@ def update():
             return "Not nullable item is empty", 400
 
         dup_title = MemeTemplate.query.filter_by(title=title).first()
-        if dup_title and dup_title.id != item_id:
+        if dup_title and dup_title.id != int(item_id):
             return f"duplicate title {title}", 409
 
         meme_template = MemeTemplate.query.get(item_id)
