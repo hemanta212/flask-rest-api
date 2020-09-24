@@ -65,11 +65,10 @@ def update():
         if dup_title and dup_title.id != item_id:
             return f"duplicate title {title}"
 
-        meme_template = MemeTemplate.query.filter_by(id=item_id).first()
+        meme_template = MemeTemplate.query.get(item_id)
         meme_template.title = title
         meme_template.description = description
         meme_template.url = url
-        db.session.update(meme_template)
         db.session.commit()
         return f"Updated {item_id} {title} {url} {description if description else ''}"
     return "This is update endpoint"
@@ -81,7 +80,7 @@ def delete():
         if not item_id:
             return "No item id provided"
 
-        meme_template = MemeTemplate.query.filter_by(id=item_id).first()
+        meme_template = MemeTemplate.query.get(item_id)
         if meme_template:
             db.session.delete(meme_template)
             db.session.commit()
