@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 
@@ -6,12 +7,13 @@ app = Flask(__name__)
 
 
 SQLALCHEMY_DATABASE_URI = "mysql+mysqlconnector://{username}:{password}@{hostname}/{databasename}".format(
-    username="memekokhani",
-    password="memerforlife",
-    hostname="memekokhani.mysql.pythonanywhere-services.com",
-    databasename="memekokhani$meme_template",
+    username=os.getenv("DB_USERNAME"),
+    password=os.getenv("DB_PASS"),
+    hostname=os.getenv("DB_HOST"),
+    databasename=os.getenv("DB_NAME"),
 )
 
+print("@@@GOT DBURL DLKDSJFLDFJ", SQLALCHEMY_DATABASE_URI)
 app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 app.config["SQLALCHEMY_POOL_RECYCLE"] = 299
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
