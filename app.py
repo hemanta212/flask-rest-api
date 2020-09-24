@@ -39,14 +39,56 @@ def post():
         url = request.args.get("url")
         description = request.args.get("description")
         if None in (title, url):
-            return "303"
+            return "Non nullable items are empty"
 
-        titles = [row.title for row in MemeTemplate.query.all()]
-        if title in titles:
-            return "334"
+        dup_title = MemeTemplate.query.filter_by(title=title).first()
+        if dup_title:
+            return f"duplicate title {title}"
 
         meme_template = MemeTemplate(title=title, description=description, url=url)
         db.session.add(meme_template)
         db.session.commit()
         return f"Posted {title} {url} {description if description else ''}"
-    return "Hello"
+    return "this is post endpoint"
+
+@app.route("/update", methods=["GET", "POST"])
+def update():
+    if request.method == "POST":
+        title = request.args.get("title")
+        url = request.args.get("url")
+        description = request.args.get("description")
+        item_id = request.args.get("id")
+        if None in (item_id, title, url):
+            return "Not nullable item is empty"
+
+        dup_title = MemeTemplate.query.filter_by(title=title).first()
+        if dup_title and dup_title.id != item_id:
+            return f"duplicate title {title}"
+
+        meme_template = MemeTemplate.query.filter_by(id=item_id).first()
+        meme_template.title = title
+        meme_template.description = description
+        meme_template.url = url
+        db.session.update(meme_template)
+        db.session.commit()
+        return f"Updated {item_id} {title} {url} {description if description else ''}"
+    return "This is update endpoint"
+
+@app.route("/delete", methods=["GET", "POST"])
+def delete():
+    if request.method == "POST":
+        item_id = request.args.get("id")
+        if not item_id:
+            return "No item id provided"
+
+        meme_template = MemeTemplate.query.filter_by(id=item_id).first()
+        if meme_template:
+            db.session.delete(meme_template)
+            db.session.commit()
+            return f"deleted item {item_id}"
+        else:
+            return f"No obj with that id: {item_id}"
+
+        return f"unknown error cant delete item_id:{item_id}"
+
+    return "this is delete endpoint"
