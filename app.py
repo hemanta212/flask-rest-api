@@ -35,9 +35,9 @@ def home():
 @app.route("/post", methods=["GET", "POST"])
 def post():
     if request.method == "POST":
-        title = request.args.get("title")
-        url = request.args.get("url")
-        description = request.args.get("description")
+        title = request.form.get("title")
+        url = request.form.get("url")
+        description = request.form.get("description")
         if None in (title, url):
             return "Non nullable items are empty", 400
 
@@ -54,10 +54,10 @@ def post():
 @app.route("/update", methods=["GET", "POST"])
 def update():
     if request.method == "POST":
-        title = request.args.get("title")
-        url = request.args.get("url")
-        description = request.args.get("description")
-        item_id = request.args.get("id")
+        title = request.form.get("title")
+        url = request.form.get("url")
+        description = request.form.get("description")
+        item_id = request.form.get("id")
         if None in (item_id, title, url):
             return "Not nullable item is empty", 400
 
@@ -76,7 +76,7 @@ def update():
 @app.route("/delete", methods=["GET", "POST"])
 def delete():
     if request.method == "POST":
-        item_id = request.args.get("id")
+        item_id = request.form.get("id")
         if not item_id:
             return "No item id provided", 400
 
