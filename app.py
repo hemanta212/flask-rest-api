@@ -23,30 +23,7 @@ from models import MemeTemplate
 @app.route('/')
 def home():
     # get data as dict from the database
-    data =[
-            {
-            'url' : 'https://github.com/hemanta212.png',
-            'title' : 'title 3',
-            'description' : '',
-            },
-            {
-            'url' : 'https://github.com/hemanta212.png',
-            'title' : 'title2',
-            'description' : 'abc',
-            },
-            {
-            'url' : 'https://github.com/hemanta212.png',
-            'title' : 'Yestai t honi boro',
-            'description' : None,
-            },
-            {
-            'url' : 'https://github.com/hemanta212.png',
-            'title' : 'Yestai t honi boro',
-            'description' : """            'url' : 'https://github.com/hemanta212.png',
-            'title' : 'Yestai t honi boro',
-            'description' : """,
-            },
-    ]
+    data = [meme_template.to_dict() for meme_template in MemeTemplate.query.all()]
     return jsonify(data)
 
 @app.route("/post", methods=["GET", "POST"])
@@ -57,6 +34,13 @@ def post():
         description = request.args.get('description')
         if None in (title, url):
             return '303'
+
+        titles = [row.title for row in MemeTemplate.query.all()]
+        if title in titles:
+            return "334"
+
+        meme_template = MemeTemplate(title=title, description=description, url=url)
+        db.session.add(meme_template);
+        db.session.commit();
         return f"Posted {title} {url} {description if description else ''}"
     return "Hello"
-
