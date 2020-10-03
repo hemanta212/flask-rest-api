@@ -32,6 +32,12 @@ def home():
     return jsonify(data)
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    # get data as dict from the database
+    return "Loggin endpoint"
+
+
 @app.route("/post", methods=["GET", "POST"])
 def post():
     if request.method == "POST":
