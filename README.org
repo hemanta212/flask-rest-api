@@ -1,0 +1,541 @@
+#+TITLE: Flask REST API
+#+OPTIONS: toc:nil
+
+This is a simple implementation of flask api with JWT(JSON WEB TOKENS). You get a token by logging in and send this token in headers for accessing every other routes.
+
+#+TOC: headlines 2
+* Table of contents :toc:
+- [[#implementation-features][Implementation Features]]
+- [[#usage][Usage]]
+  - [[#login-and-get-a-token][Login and get a token]]
+  - [[#creating-a-user][Creating a user]]
+  - [[#viewing-user-info][Viewing user info]]
+  - [[#promoting-a-user][Promoting a user]]
+  - [[#deleting-a-user][Deleting a user]]
+  - [[#creating-a-post][Creating a post]]
+  - [[#viewing-post][Viewing post]]
+  - [[#updating-a-post][Updating a post]]
+  - [[#deleting-a-post][Deleting a post]]
+- [[#configuration][Configuration]]
+  - [[#installing-dependencies][Installing dependencies]]
+  - [[#database-config][Database config]]
+  - [[#database-initialization-and-migration][Database initialization and migration]]
+  - [[#setting-up-migration-for-existing-database][Setting up migration for existing database]]
+  - [[#creating-an-admin-user][Creating an admin user]]
+- [[#application-registration-tokens][Application registration tokens]]
+- [[#loosening-other-routes][Loosening other routes]]
+- [[#useful-tools][Useful tools]]
+  - [[#httpie][Httpie]]
+  - [[#httpbinorg][Httpbin.org:]]
+  - [[#postman-and-similar-others][Postman (and similar others)]]
+- [[#inner-details][Inner details]]
+  - [[#what-requests-basichttpauth-does][What requests" BasicHTTPAuth does]]
+  - [[#diffrent-ways-to-get-request-data-in-flask][Diffrent ways to get request data in flask]]
+- [[#todos][TODOS]]
+
+* Implementation Features
+- Rolling out custom flask decorators
+- Token based auth with jwt
+- Custom application registering and separate client tokens
+- Http Basic username:pass authentication
+- Flask blueprinting for modularization
+- Flask database migration.
+- Supports postgres, sql, sqlite etc dbs with sqlalchemy
+- Returning diffrent http status codes
+- Some common short flask tricks
+ - Defining same routes with diffrent methods to reduce if/else nests
+ - Returning python string, dicts autogenerates a json response (no need jsonify)
+ - Calling .app_context().push() on flask app instance. Helps a ton in intrepreter to play with db and stuff without initializing
+
+* Usage
+This api has user and post tables in db. Every routes relating to 'user' and 'post' requires a token in the header which can be obtained by logging in throgh login route.
+
+This assumes you have completed the configuration, created admin user and have its credentials. [[#configuration][See configuration section]].
+
+
+NOTE: Any illegal or failed requests on any route will generate non-200 status code and return a json dict with one "message" key stating the reason
+
+Example:
+#+BEGIN_SRC json
+{"message": "no user found"}
+#+END_SRC
+
+** Login and get a token
+ENDPOINT: "login" [GET REQ]
+Payload: auth(username, pass)
+
+#+BEGIN_SRC python
+import requests
+from requests.auth import HTTPBasicAuth
+
+URL = "https://apiurl.com"
+# fill username and password with your acc info
+auth = HTTPBasicAuth("username", "password")
+
+login_response = requests.get(URL+"/login", auth=auth)
+login_response.status_code # confirm that its 200
+
+token = login_response.json()["token"]
+
+headers = {
+    "x-access-token": token
+}
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"token": "soasloiwurpoewiurpowierupwoeirf"}
+#+END_SRC
+
+For accessing every other route, you need to specify this token in the header as value of "x-access-token".
+
+NOTE: This token has no time limit and will never expire, [[#application-registration-tokens][see why.]] For making expirable tokens have a look at [[https://pyjwt.readthedocs.io/en/latest/usage.html#expiration-time-claim-exp][here]].
+
+** Creating a user
+ENDPOINT: "user" [POST REQ]
+REQ: admin token
+
+Creating a user requires admin account"s token. You send a post request to the "user" endpoint.
+
+The payload should have username and password.
+#+BEGIN_SRC python
+headers = {"x-access-token": token}
+data = {"username": "some usename", "password": "my password"}
+
+create_user = requests.post(URL+"/user", data=data, headers=headers
+#+END_SRC
+
+Response: 200
+#+BEGIN_SRC json
+{
+    "message": "User created successfully"
+}
+#+END_SRC
+
+** Viewing user info
+ENDPOINT: "user" [GET REQ]
+REQ: admin token
+
+Sending the request gets you all users info
+#+BEGIN_SRC python
+headers = {"x-access-token": token}
+requests.get(URL+"/user", headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"users": [
+    {"admin": true, "id": 1,
+     "password": "sha256$Sot2tcp9$671301dae8s45ad6f2fe0f583f8e60bfc90b24f045fcb791c4483711ca9c6d09",
+     "public_id": "e9572ee6-4b5e-45e4-a840-58a33b04b8a7",
+     "username": "my username"}
+   ]
+}
+#+END_SRC
+
+**** Viewing Single User
+ENDPOINT: "user/public_id" [GET REQ]
+REQ: admin token
+
+You can get public id of user by sending GET req to "user" endpoint: see above
+#+BEGIN_SRC python
+requests.get(URL+"/user/public_id", headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"user":
+ {
+    "admin": false,
+     "id": 2,
+     "password": "sha256$f8ulwnAv$8af6f5590e8af54c8d2171cc9afc568727a8a763e8c875855f8b7d27f5dfcccd",
+     "public_id": "1f190b06-263s-42aa-86e9-460d0aff93d9",
+     "username": "my username"
+ }
+}
+#+END_SRC
+
+** Promoting a user
+ENDPOINT: "user/public_id" [PUT REQ]
+REQ: admin token
+
+#+BEGIN_SRC python
+headers = {"x-access-token": token}
+requests.put(URL+"/user/public_id", headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"message": "The user has been promoted!"}
+#+END_SRC
+
+** Deleting a user
+ENDPOINT: "user/public_id" [DELETE REQ]
+REQ: admin token
+
+#+BEGIN_SRC python
+headers = {"x-access-token": token}
+requests.delete(URL+"/user/public_id", headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"message": "The user has been deleted!"}
+#+END_SRC
+
+** Creating a post
+ENDPOINT: "template" [POST REQ]
+
+The payload should have title and url and optionally description.
+#+BEGIN_SRC python
+headers = {"x-access-token": token}
+data = {"title": "some title",
+         "url": "http:/test.com",
+         "description": "some desc",
+         }
+requests.put(URL+"/user/public_id", headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"message": "Post created"}
+#+END_SRC
+** Viewing post
+ENDPOINT: "template" [GET REQ]
+
+#+BEGIN_SRC python
+headers = {"x-access-token": token}
+requests.get(URL+"/template", headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"templates": [
+    {"description": "Done",
+     "id": 27,
+     "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
+     "title": "Test thing",
+     "url": "https://i.imgur.com/yYGxFJX.jpeg",
+     "username": "somerandomusername",
+     "posted": true},
+
+    {"description": null,
+     "id": 27,
+     "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
+     "title": "Test thing",
+     "url": "https://i.imgur.com/yYGxFJX.jpeg",
+     "username": null,
+     "posted": false},   ]
+}
+#+END_SRC
+Note: Sometimes user_id, description can be null.
+
+*** View filtered post
+ENDPOINT: "/" [GET REQ]
+
+The api provides a way to get approved post (with approved propery set to true + current user's own post) with a single api call.
+#+BEGIN_SRC python
+requests.get(URL+"/", headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"templates": [
+    {"description": "Done",
+     "id": 27,
+     "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
+     "title": "Test thing",
+     "url": "https://i.imgur.com/yYGxFJX.jpeg",
+     "username": "somerandomusername",
+     "posted": true}
+   ]
+}
+#+END_SRC
+Note: Sometimes user_id, description can be null too.
+
+*** Viewing Single Post
+ENDPOINT: "template/template_id" [GET REQ]
+
+You can get template id of post by sending GET req to "template" endpoint: see above
+#+BEGIN_SRC python
+requests.get(URL+"/template/template_id", headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"template":
+ {"description": "Done",
+     "id": 27,
+     "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
+     "title": "Test thing",
+     "url": "https://i.imgur.com/yYGxFJX.jpeg",
+     "user_id": "alskjdf_dfkdjf"
+ }
+}
+#+END_SRC
+Note: Sometimes user_id, description can be null too.
+
+** Updating a post
+ENDPOINT: "template/template_id" [PUT REQ]
+
+Updating a post is same as creating it.
+#+BEGIN_SRC python
+headers = {"x-access-token": token}
+data = {"title": "some title",
+         "url": "http:/test.com",
+         "description": "some desc",
+         }
+requests.put(URL+"/template/template_id", data=data, headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"message": "Post Updated"}
+#+END_SRC
+
+** Deleting a post
+ENDPOINT: "template/template_id" [DELETE REQ]
+
+#+BEGIN_SRC python
+headers = {"x-access-token": token}
+requests.delete(URL+"/template/template_id", headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"message": "The post has been deleted"}
+#+END_SRC
+
+* Configuration
+All the configs are set in the meme_api/__init__.py file.
+
+** Installing dependencies
+- With Pip
+ #+BEGIN_SRC shell
+ $ python3 -m venv .venv
+ $ .venv/bin/python -m pip install -r requirements.txt
+ #+END_SRC
+- With Poetry
+ #+BEGIN_SRC shell
+ $ poetry install
+ #+END_SRC
+** Database config
+  The config SQLALCHEMY_DATABASE_URI is made from different env vars parts like HOST_NAME, HOST_PASS etc You need to set those variables
+  Or you can just use sqlite db.
+
+  A minimal '.env' config looks like
+  #+BEGIN_SRC shell
+  export SECRET_KEY='mysecretkey'
+  export SQLALCHEMY_DATABASE_URI='sqlite:///site.db'
+  export FLASK_APP=run.py
+  #+END_SRC
+
+  This same config along with example config for hosted sql (eg MYSQL) server is available in .env_eg file. Just rename, edit and source this file.
+  #+BEGIN_SRC shell
+   #+ .env_eg file +#
+   export SECRET_KEY='mysecretkey'
+   export SQLALCHEMY_DATABASE_URI='sqlite:///site.db'
+   export FLASK_APP=run.py
+
+   # For a hosted mysql/postgres server
+   # Note: if SQLALCHEMY_DATABASE_URI env var is present these env vars will be ignored & WONT BE USED
+   export DB_USERNAME='username of database'
+   export DB_PASS='password of database'
+   export DB_HOST='host address url of database'
+   export DB_NAME='name of db and tablename eg. mysqldb$posts'
+  #+END_SRC
+** Database initialization and migration
+Before initializing the database. Create a migrations folder for you db and delete the existing one
+#+BEGIN_SRC shell
+$ rm -rf ./migrations
+$ python -m flask db init # makes migrations folder
+#+END_SRC
+
+Run migrate to create the tables required by the models
+#+BEGIN_SRC
+$ python -m flask db migrate
+$ python -m flask db upgrade
+#+END_SRC
+
+Once you make any changes to models you need to migrate & upgrade the database as shown above
+
+** Setting up migration for existing database
+In case you already have a database initialized(ie db schema created) through different option and want to integrate flask-migrate in it.
+
+First: Initialize the migrations folder
+Note: delete existing migrations folder
+#+BEGIN_SRC shell
+$ python -m flask db init
+#+END_SRC
+
+Create another empty database table and point the database env variables to this empty table (in case of sqlite just change the 'site.db' name to 'site2.db')
+
+#+BEGIN_SRC shell
+$ python -m flask db migrate
+#+END_SRC
+
+Now again point to your original database column in environment vars (for sqlite just change 'site2.db' back to 'site.db')
+
+#+BEGIN_SRC shell
+$ python -m flask db stamp head
+$ python -m flask db migrate # you should see 'no change in schema detected' message
+#+END_SRC
+
+You are all set. From now, if you make any changes to models you need to migrate & upgrade the database as shown below
+#+BEGIN_SRC
+$ python -m flask db migrate
+$ python -m flask db upgrade
+#+END_SRC
+
+** Creating an admin user
+Only admin users are allowed to create new accounts through api. Thus a admin user has to be manually created (or you could remove that if statement and create user acc through that route)
+#+BEGIN_SRC python
+import uuid
+
+from werkzeug.security import generate_password_hash
+
+from run import app
+from meme_api import db
+from meme_api.models import User
+
+app.app_context().push()
+
+hashed_pass = generate_password_hash('secretpassword', method='sha256')
+
+admin = User(username='admin',
+             password=hashed_pass,
+             admin=True,
+             public_id=str(uuid.uuid4()) )
+
+db.session.add(admin)
+db.session.commit()
+#+END_SRC
+
+* Application registration tokens
+The token generated by the api never expires. For preventing leaked tokens to be misued and also limit the database connections, the prod branch of this repo implements a application based registering.
+
+A random uuid is generated and manually put into the meme_api/apps.py file. This id can now be used in headers for requesting every route.
+#+BEGIN_SRC python
+#+ apps.py file +
+registered = {
+    'someapp': 'generated random uuid',
+    'cli': 'another uuid for another app',
+}
+#+END_SRC
+
+#+BEGIN_SRC python
+headers = {
+    'x-application-token': 'uuid token for application',
+    'x-access-token': 'user login token',
+}
+#+END_SRC
+Every routes including login now requires above 'x-application-token' header for the request to be successful.
+
+* Loosening other routes
+With application based authentication in place, the routes for creating new user, getting all users etc can be loosened to not require an admin token.
+
+* Useful tools
+There are many good tools to leverage understanding of how api's and http requests work.
+** [[https://github.com/httpie/httpie][Httpie]]
+- CLI tools for testing, debugging API endpoints.
+** Httpbin.org:
+- An dedicated website which provides post, delete, put etc endpoints in httpbin.org/post, /delete respectivly. Returns all the headers and data info it got in nice json format.
+ - Great partner tool with httpie
+
+** Postman (and similar others)
+- Exploring, testing endpoints with diffrent kinds of requests in a friendly UI. Helps creating a test suite.
+
+* Inner details
+** What requests" BasicHTTPAuth does
+#+BEGIN_SRC python
+import requests
+from requests.auth import HTTPBasicAuth
+
+URL = "https://httpbin.org"
+auth = HTTPBasicAuth("username", "password")
+
+login_response = requests.post(URL+"/post", auth=auth)
+
+print(login_response.json())
+#+END_SRC
+
+Response
+#+BEGIN_SRC json
+{"args": {},
+ "data": "",
+ "files": {},
+ "form": {},
+ "headers": {"Accept": "*/*",
+             "Accept-Encoding": "gzip, deflate",
+             "Authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+             "Content-Length": "0",
+             "Host": "httpbin.org",
+             "User-Agent": "python-requests/2.24.0",
+             "X-Amzn-Trace-Id": "Root=1-5f8aee35-211905107cfea23a2ad3b865"},
+ "json": null,
+ "origin": "35.229.170.146",
+ "url": "https://httpbin.org/post"}
+ #+END_SRC
+
+ What we are interested in is the Authorization header. Basically the requests transformed the username and password to base64 encoded string and passed the header.
+ #+BEGIN_SRC python
+ header = {
+     "Authorization": "Basic " + Base64encoded(username + ":" + password)
+ }
+ #+END_SRC
+
+ So instead of passing auth arg we can also create this authorization header ourself and should get the same result
+
+*** Implementing own auth header
+#+BEGIN_SRC python
+import requests
+import base64
+
+URL = "httpbin.org/post"
+token = base64.b64encode(bytes("username:pass", "utf-8"))
+headers  = {"Authorization": f"Basic {token.decode()}"}
+response = requests.get(URL, headers=headers)
+
+print(response.json())
+#+END_SRC
+#+BEGIN_SRC json
+{"args": {},
+ "data": "",
+ "files": {},
+ "form": {},
+ "headers": {"Accept": "*/*",
+             "Accept-Encoding": "gzip, deflate",
+             "Authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+             "Content-Length": "0",
+             "Host": "httpbin.org",
+             "User-Agent": "python-requests/2.24.0",
+             "X-Amzn-Trace-Id": "Root=1-5f8af1bb-716f15011a1b61770e118a7f"},
+ "json": null,
+ "origin": "35.229.170.146",
+ "url": "https://httpbin.org/post"}
+#+END_SRC
+
+** Diffrent ways to get request data in flask
+Ref: [[https://stackoverflow.com/questions/10434599/get-the-data-received-in-a-flask-request][stackoverflow page]]
+
+- request.data : used for fallback data storage mostly empty
+
+- request.args: the key/value pairs in the URL query string
+
+- request.form:
+   the key/value pairs in the body, from a HTML post form, or JavaScript request that isn't JSON encoded
+
+- request.files:
+  the files in the body, which Flask keeps separate from form. HTML forms must
+ use enctype=multipart/form-data or files will not be uploaded.
+
+- request.values:
+   combined args and form, preferring args if keys overlap
+
+- request.json:
+  parsed JSON data. The request must have the application/json content type, or
+  use request.get_json(force=True) to ignore the content type.
+
+* TODOS
+**** [ ] Add Tests
+**** [ ] Add Logging
