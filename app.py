@@ -17,7 +17,6 @@ SQLALCHEMY_DATABASE_URI = (
     )
 )
 
-print("@@@GOT DBURL DLKDSJFLDFJ", SQLALCHEMY_DATABASE_URI)
 app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 app.config["SQLALCHEMY_POOL_RECYCLE"] = 299
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -47,29 +46,28 @@ def home():
     return jsonify(data)
 
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    # get data as dict from the database
-    if request.method == 'GET':
-        return "Loggin endpoint"
+def custom_login(func):
+    def inner_func():
+        # get data as dict from the database
+        if request.method == 'POST':
+            password = request.form.get('password')
+            username = request.form.get('username')
+            if not username or not password:
+                return "username and passworld fields required", 400
 
-    password = request.form.get('password')
-    username = request.form.get('username')
-    if not username or not password:
-        return "username and passworld fields required", 400
+            if not username in all_users:
+                return "No username as {username}".format(username=username), 404
 
-    if not username in all_users:
-        return "No username as {username}".format(username=username), 404
+            user = all_users[username]
+            if not user.check_password(password):
+                return "Wrong password submitted", 400
 
-    user = all_users[username]
-    if not user.check_password(password):
-        return "Wrong password submitted", 400
-    
-    login_user(user)
-    return "Logged in.."
+        return func()
+    return inner_func
 
 
 @app.route("/post", methods=["GET", "POST"])
+@custom_login
 def post():
     if request.method == "POST":
         title = request.form.get("title")
@@ -89,6 +87,7 @@ def post():
     return "this is post endpoint"
 
 @app.route("/update", methods=["GET", "POST"])
+@custom_login
 def update():
     if request.method == "POST":
         title = request.form.get("title")
@@ -111,6 +110,7 @@ def update():
     return "This is update endpoint"
 
 @app.route("/delete", methods=["GET", "POST"])
+@custom_login
 def delete():
     if request.method == "POST":
         item_id = request.form.get("id")
@@ -128,3 +128,6 @@ def delete():
         return f"unknown error cant delete item_id:{item_id}", 500
 
     return "this is delete endpoint"
+
+
+
