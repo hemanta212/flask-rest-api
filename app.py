@@ -1,6 +1,8 @@
 import os
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import login_user, LoginManager, UserMixin
+from werkzeug.security import generate_password_hash
 
 
 app = Flask(__name__)
@@ -22,8 +24,21 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
-from models import MemeTemplate
+app.secret_key = os.getenv('SECRET_KEY')
+login_manager = LoginManager()
+login_manager.init_app(app)
 
+from models import MemeTemplate, User
+
+all_users = {
+        "admin": User("admin", generate_password_hash("secret")),
+        "bob": User("bob", generate_password_hash("less-secret")),
+        "caroline": User("caroline", generate_password_hash("completely-secret")),
+}
+
+@login_manager.user_loader
+def load_user(user_id):
+    return all_users.get(user_id)
 
 @app.route("/")
 def home():
@@ -35,7 +50,23 @@ def home():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     # get data as dict from the database
-    return "Loggin endpoint"
+    if request.method == 'GET':
+        return "Loggin endpoint"
+
+    password = request.form.get('password')
+    username = request.form.get('username')
+    if not username or not password:
+        return "username and passworld fields required", 400
+
+    if not username in all_users:
+        return "No username as {username}".format(username=username), 404
+
+    user = all_users[username]
+    if not user.check_password(password):
+        return "Wrong password submitted", 400
+    
+    login_user(user)
+    return "Logged in.."
 
 
 @app.route("/post", methods=["GET", "POST"])
