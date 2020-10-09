@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 from flask import  Flask, Blueprint
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -24,6 +25,7 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
+    migrate = Migrate(app, db)
 
     from meme_api.user_routes import users
     from meme_api.meme_template_routes import meme_template

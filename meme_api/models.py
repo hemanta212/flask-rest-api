@@ -1,3 +1,4 @@
+from datetime import datetime
 from meme_api import db
 
 class MemeTemplate(db.Model):
@@ -8,6 +9,7 @@ class MemeTemplate(db.Model):
     description = db.Column(db.String(4096))
     url = db.Column(db.String(4096), nullable=False)
     user_id = db.Column(db.Integer)
+    posted = db.Column(db.DateTime, default=datetime.now)
 
     def to_dict(self):
         return {
@@ -16,6 +18,7 @@ class MemeTemplate(db.Model):
             "url": self.url,
             "description": self.description,
             "user_id": self.user_id,
+            "posted": self.posted,
         }
 
 class User(db.Model):
