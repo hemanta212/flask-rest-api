@@ -20,8 +20,8 @@ users = Blueprint("users", __name__)
 @users.route('/user', methods=['GET'])
 @token_required
 def get_all_users(current_user):
-#    if not current_user.admin:
-#        return jsonify({'message' : 'Cannot perform that function!'})
+    if not current_user.admin:
+        return jsonify({'message' : 'Cannot perform that function!'})
     all_users = User.query.all()
     output = [user.to_dict() for user in all_users]
     return jsonify({'users' : output})
@@ -38,11 +38,11 @@ def get_one_user(current_user, public_id):
 
 
 @users.route('/user', methods=['POST'])
-def create_user():
-    #if not current_user.admin:
-    #    return jsonify({'message' : 'Cannot perform that function!'})
+@token_required
+def create_user(current_user):
+    if not current_user.admin:
+        return jsonify({'message' : 'Cannot perform that function!'})
     data = request.form
-    print("REQUEST>GET_DATA", data)
 
     username, password = data.get('username'), data.get('password')
     if not username or not password:
@@ -58,6 +58,9 @@ def create_user():
 @users.route('/user/<public_id>', methods=['PUT'])
 @token_required
 def promote_user(current_user, public_id):
+    if not current_user.admin:
+        return jsonify({'message' : 'Cannot perform that function!'})
+
     user = User.query.filter_by(public_id=public_id).first()
     if not user:
         return jsonify({'message' : 'No user found!'})
@@ -70,6 +73,9 @@ def promote_user(current_user, public_id):
 @users.route('/user/<public_id>', methods=['DELETE'])
 @token_required
 def delete_user(current_user, public_id):
+    if not current_user.admin:
+        return jsonify({'message' : 'Cannot perform that function!'})
+
     user = User.query.filter_by(public_id=public_id).first()
     if not user:
         return jsonify({'message' : 'No user found!'})
@@ -82,7 +88,6 @@ def delete_user(current_user, public_id):
 @users.route('/login')
 def login():
     auth = request.authorization
-    print('OBA  AUTH YO HO', auth)
     if not auth or not auth.username or not auth.password:
         return make_response('Could not verify', 401, {'WWW-Authenticate' : 'Basic realm="Login required!"'})
 
