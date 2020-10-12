@@ -34,7 +34,7 @@ def create_template(current_user):
     if not title or not url:
         return {'message':"Non nullable items are empty"}, 400
 
-    template = MemeTemplate(title=title, description=description, url=url, user_id=current_user.public_id)
+    template = MemeTemplate(title=title, description=description, url=url, username=current_user.username)
     db.session.add(template)
     db.session.commit()
     return {'message' : "MemeTemplate created!"}

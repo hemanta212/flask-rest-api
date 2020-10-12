@@ -8,7 +8,7 @@ class MemeTemplate(db.Model):
     title = db.Column(db.String(4096), nullable=False)
     description = db.Column(db.String(4096))
     url = db.Column(db.String(4096), nullable=False)
-    user_id = db.Column(db.Integer)
+    username = db.Column(db.String(4096), nullable=True)
     posted = db.Column(db.DateTime, default=datetime.now)
 
     def to_dict(self):
@@ -17,7 +17,7 @@ class MemeTemplate(db.Model):
             "title": self.title,
             "url": self.url,
             "description": self.description,
-            "user_id": self.user_id,
+            "user_id": self.username,
             "posted": self.posted,
         }
 
