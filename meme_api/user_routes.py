@@ -7,7 +7,7 @@ from functools import wraps
 
 import jwt
 
-from flask import request, jsonify, make_response, Blueprint, current_app
+from flask import request, make_response, Blueprint, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from meme_api import db
@@ -21,10 +21,10 @@ users = Blueprint("users", __name__)
 @token_required
 def get_all_users(current_user):
     if not current_user.admin:
-        return jsonify({'message' : 'Cannot perform that function!'})
+        return {'message' : 'Cannot perform that function!'}, 403
     all_users = User.query.all()
     output = [user.to_dict() for user in all_users]
-    return jsonify({'users' : output})
+    return {'users' : output}
 
 
 @users.route('/user/<public_id>', methods=['GET'])
@@ -32,16 +32,16 @@ def get_all_users(current_user):
 def get_one_user(current_user, public_id):
     user = User.query.filter_by(public_id=public_id).first()
     if not user:
-        return jsonify({'message' : 'No user found!'})
+        return {'message' : 'No user found!'}, 404
     user_data = user.to_dict()
-    return jsonify({'user' : user_data})
+    return {'user' : user_data}
 
 
 @users.route('/user', methods=['POST'])
 @token_required
 def create_user(current_user):
     if not current_user.admin:
-        return jsonify({'message' : 'Cannot perform that function!'})
+        return {'message' : 'Cannot perform that function!'}, 403
     data = request.form
 
     username, password = data.get('username'), data.get('password')
@@ -52,37 +52,37 @@ def create_user(current_user):
     new_user = User(public_id=str(uuid.uuid4()), username=username, password=hashed_password, admin=False)
     db.session.add(new_user)
     db.session.commit()
-    return jsonify({'message' : 'New user created!'})
+    return {'message' : 'New user created!'}
 
 
 @users.route('/user/<public_id>', methods=['PUT'])
 @token_required
 def promote_user(current_user, public_id):
     if not current_user.admin:
-        return jsonify({'message' : 'Cannot perform that function!'})
+        return {'message' : 'Cannot perform that function!'}, 403
 
     user = User.query.filter_by(public_id=public_id).first()
     if not user:
-        return jsonify({'message' : 'No user found!'})
+        return {'message' : 'No user found!'}, 404
 
     user.admin = True
     db.session.commit()
-    return jsonify({'message' : 'The user has been promoted!'})
+    return {'message' : 'The user has been promoted!'}
 
 
 @users.route('/user/<public_id>', methods=['DELETE'])
 @token_required
 def delete_user(current_user, public_id):
     if not current_user.admin:
-        return jsonify({'message' : 'Cannot perform that function!'})
+        return {'message' : 'Cannot perform that function!'}, 403
 
     user = User.query.filter_by(public_id=public_id).first()
     if not user:
-        return jsonify({'message' : 'No user found!'})
+        return {'message' : 'No user found!'}, 404
 
     db.session.delete(user)
     db.session.commit()
-    return jsonify({'message' : 'The user has been deleted!'})
+    return {'message' : 'The user has been deleted!'}
 
 
 @users.route('/login')
@@ -97,7 +97,7 @@ def login():
 
     if check_password_hash(user.password, auth.password):
         token = jwt.encode({'public_id' : user.public_id}, current_app.config['SECRET_KEY'])
-        return jsonify({'token' : token.decode('UTF-8')})
+        return {'token' : token.decode('UTF-8')}
 
     return make_response('Could not verify', 401, {'WWW-Authenticate' : 'Basic realm="Login required!"'})
 
