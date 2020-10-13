@@ -41,9 +41,7 @@ def registration_required(f):
         if not token:
             return {'message' : 'App Token is missing!'}, 401
 
-        if token in registered.values():
-            registered  = True
-        else:
+        if token not in registered.values():
             return {'message' : 'App Token is invalid!'}, 401
 
         return f(*args, **kwargs)
