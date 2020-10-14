@@ -13,17 +13,17 @@ def token_required(f):
     def decorated(*args, **kwargs):
         token = None
 
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
+        if "x-access-token" in request.headers:
+            token = request.headers["x-access-token"]
 
         if not token:
-            return {'message' : 'User Token is missing!'}, 401
+            return {"message": "User Token is missing!"}, 401
 
         try:
-            data = jwt.decode(token, current_app.config['SECRET_KEY'])
-            current_user = User.query.filter_by(public_id=data['public_id']).first()
+            data = jwt.decode(token, current_app.config["SECRET_KEY"])
+            current_user = User.query.filter_by(public_id=data["public_id"]).first()
         except:
-            return {'message' : 'User Token is invalid!'}, 401
+            return {"message": "User Token is invalid!"}, 401
 
         return f(current_user, *args, **kwargs)
 
@@ -35,14 +35,14 @@ def registration_required(f):
     def decorated(*args, **kwargs):
         token = None
 
-        if 'x-application-token' in request.headers:
-            token = request.headers['x-application-token']
+        if "x-application-token" in request.headers:
+            token = request.headers["x-application-token"]
 
         if not token:
-            return {'message' : 'App Token is missing!'}, 401
+            return {"message": "App Token is missing!"}, 401
 
         if token not in registered.values():
-            return {'message' : 'App Token is invalid!'}, 401
+            return {"message": "App Token is invalid!"}, 401
 
         return f(*args, **kwargs)
 

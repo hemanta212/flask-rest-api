@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import os
-from flask import  Flask, Blueprint
+from flask import Flask, Blueprint
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
+
 
 def create_app():
     app = Flask(__name__)
@@ -17,10 +18,12 @@ def create_app():
             databasename=os.getenv("DB_NAME"),
         )
     )
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
-    CUSTOM_DB = os.getenv('SQLALCHEMY_DATABASE_URI')
-    app.config["SQLALCHEMY_DATABASE_URI"] = CUSTOM_DB if CUSTOM_DB else SQLALCHEMY_DATABASE_URI
+    CUSTOM_DB = os.getenv("SQLALCHEMY_DATABASE_URI")
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        CUSTOM_DB if CUSTOM_DB else SQLALCHEMY_DATABASE_URI
+    )
     app.config["SQLALCHEMY_POOL_RECYCLE"] = 299
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 

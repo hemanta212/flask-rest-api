@@ -1,6 +1,7 @@
 from datetime import datetime
 from meme_api import db
 
+
 class MemeTemplate(db.Model):
     __tablename__ = "meme_template"
 
@@ -22,6 +23,7 @@ class MemeTemplate(db.Model):
             "posted": self.posted,
             "approved": self.approved,
         }
+
 
 class User(db.Model):
     __tablename__ = "user"
