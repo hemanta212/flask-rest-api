@@ -9,6 +9,25 @@ meme_template = Blueprint("meme_template", __name__)
 
 
 @meme_template.route('/', methods=['GET'])
+@token_required
+@registration_required
+def get_all_templates(current_user):
+    """
+    Gives all the approved templates + user's own templates regardless of approval status
+    """
+    moderated = []
+
+    meme_templates = MemeTemplate.query.all()
+    for template in meme_templates:
+        if template.approved:
+            moderated.append(template)
+        elif template.username == current_user.username:
+            moderated.append(template)
+
+    output = [template.to_dict() for template in moderated]
+    return {'templates' : output}
+
+
 @meme_template.route('/template', methods=['GET'])
 @token_required
 @registration_required
