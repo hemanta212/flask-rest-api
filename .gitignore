@@ -4,6 +4,6 @@
 .vscode
 secrets.json
 __pycache__
-.pyc
+*.pyc
 .env
 *.db

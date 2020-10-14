@@ -89,9 +89,18 @@ def complete_template(current_user, template_id):
     if not template:
         return {"message": "No template found!"}, 404
 
+    if (template.username != current_user.username) and (not current_user.admin):
+        return {"message": "Unauthorized edit attempt"}, 403
+
+    if template.approved and not current_user.admin:
+        return {"message": "Unauthorized edit to approved post"}, 403
+
     template.title = title
     template.description = description
     template.url = url
+    if current_user.admin:
+        template.approved = True
+
     db.session.commit()
     return {"message": "MemeTemplate item has been updated!"}
 
