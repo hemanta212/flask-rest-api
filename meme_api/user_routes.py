@@ -112,7 +112,7 @@ def login():
     if not user:
         return make_response(
             "Could not verify",
-            401,
+            404,
             {"WWW-Authenticate": 'Basic realm="Login required!"'},
         )
 
