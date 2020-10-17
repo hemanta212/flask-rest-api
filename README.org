@@ -43,10 +43,10 @@ This is a simple implementation of flask api with JWT(JSON WEB TOKENS). You get 
 - Supports postgres, sql, sqlite etc dbs with sqlalchemy
 - Returning diffrent http status codes
 - Some common short flask tricks
--- Defining same routes with diffrent methods to reduce if/else nests
--- Returning python string, dicts autogenerates a json response (no need jsonify)
--- Calling .app_context().push() on flask app instance
-- Helps a ton in intrepreter to play with db and stuff without initializing
+ - Defining same routes with diffrent methods to reduce if/else nests
+ - Returning python string, dicts autogenerates a json response (no need jsonify)
+ - Calling .app_context().push() on flask app instance
+   - Helps a ton in intrepreter to play with db and stuff without initializing
 
 * Usage
 This api has user and post tables in db. Every routes relating to 'user' and 'post' requires a token in the header which can be obtained by logging in throgh login route.
