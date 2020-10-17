@@ -3,34 +3,60 @@ This is a simple implementation of flask api with JWT(JSON WEB TOKENS). You get 
 
 # Table of Contents
 
-1.  [Usage](#orgb732884)
-    1.  [Login and get a token](#org9832bea)
-    2.  [Creating a user](#orgd24b96a)
-    3.  [Viewing user info](#org8f5dee1)
-    4.  [Promoting a user](#orgf794b60)
-    5.  [Deleting a user](#orgc4379ee)
-    6.  [Creating a post](#org199daa1)
-    7.  [Viewing post](#orgc436b68)
-    8.  [Updating a post](#org35efcf3)
-    9.  [Deleting a post](#org392f3b0)
-2.  [Configuration](#orga9733d7)
-    1.  [Installing dependencies](#orgc59a945)
-    2.  [Database config](#org9c22f5a)
-    3.  [Database initialization and migration](#org2dbc4d5)
-    4.  [Setting up migration for existing database](#org8cf28e5)
-    5.  [Creating an admin user](#orgfca0e17)
-3.  [Application registration tokens](#org80ec986)
-4.  [Loosening other routes](#orgfc6484c)
-5.  [TODOS](#orgece8575)
+1.  [Implementation Features](#org6553f32)
+2.  [Usage](#org704bcc3)
+    1.  [Login and get a token](#orge07ff81)
+    2.  [Creating a user](#orga2531ad)
+    3.  [Viewing user info](#orgf03998e)
+    4.  [Promoting a user](#org99d2616)
+    5.  [Deleting a user](#org17da2ea)
+    6.  [Creating a post](#org3338898)
+    7.  [Viewing post](#org9f1bdf8)
+    8.  [Updating a post](#orge33aa79)
+    9.  [Deleting a post](#org20157c1)
+3.  [Configuration](#orgf80e681)
+    1.  [Installing dependencies](#org4c89045)
+    2.  [Database config](#org66e65a2)
+    3.  [Database initialization and migration](#orgd220898)
+    4.  [Setting up migration for existing database](#orgabf824d)
+    5.  [Creating an admin user](#org8babbe3)
+4.  [Application registration tokens](#orgec5c26c)
+5.  [Loosening other routes](#orgde17485)
+6.  [Useful tools](#org3814e33)
+    1.  [Httpie](#org4683aa9)
+    2.  [Httpbin.org:](#orgbbd8ff1)
+    3.  [Postman (and similar others)](#orgd94974e)
+7.  [Inner details](#org91cf6ff)
+    1.  [What requests&ldquo; BasicHTTPAuth does](#org79da42f)
+    2.  [Diffrent ways to get request data in flask](#org959a991)
+8.  [TODOS](#org40dc78b)
 
 
-<a id="orgb732884"></a>
+<a id="org6553f32"></a>
+
+# Implementation Features
+
+-   Rolling out custom flask decorators
+-   Token based auth with jwt
+-   Custom application registering and separate client tokens
+-   Http Basic username:pass authentication
+-   Flask blueprinting for modularization
+-   Flask database migration.
+-   Supports postgres, sql, sqlite etc dbs with sqlalchemy
+-   Returning diffrent http status codes
+-   Some common short flask tricks
+    -   Defining same routes with diffrent methods to reduce if/else nests
+    -   Returning python string, dicts autogenerates a json response (no need jsonify)
+    -   Calling .app<sub>context</sub>().push() on flask app instance. Helps a ton in intrepreter to play with db and stuff without initializing
+
+
+<a id="org704bcc3"></a>
 
 # Usage
 
 This api has user and post tables in db. Every routes relating to &rsquo;user&rsquo; and &rsquo;post&rsquo; requires a token in the header which can be obtained by logging in throgh login route.
 
-This assumes you have completed the configuration, created admin user and have its credentials. [See configuration section](#orga9733d7).
+This assumes you have completed the configuration, created admin user and have its credentials.[See configuration section](#orgf80e681).
 
 NOTE: Any illegal or failed requests on any route will generate non-200 status code and return a json dict with one &ldquo;message&rdquo; key stating the reason
 
@@ -39,7 +65,7 @@ Example:
     {"message": "no user found"}
 
 
-<a id="org9832bea"></a>
+<a id="orge07ff81"></a>
 
 ## Login and get a token
 
@@ -68,10 +94,10 @@ RESPONSE: 200
 
 For accessing every other route, you need to specify this token in the header as value of &ldquo;x-access-token&rdquo;.
 
-NOTE: This token has no time limit and will never expire, [see why.](#org80ec986) For making expirable tokens have a look at [here](https://pyjwt.readthedocs.io/en/latest/usage.html#expiration-time-claim-exp).
+NOTE: This token has no time limit and will never expire, [see why.](#orgec5c26c) For making expirable tokens have a look at [here](https://pyjwt.readthedocs.io/en/latest/usage.html#expiration-time-claim-exp).
 
 
-<a id="orgd24b96a"></a>
+<a id="orga2531ad"></a>
 
 ## Creating a user
 
@@ -94,7 +120,7 @@ Response: 200
     }
 
 
-<a id="org8f5dee1"></a>
+<a id="orgf03998e"></a>
 
 ## Viewing user info
 
@@ -138,7 +164,7 @@ RESPONSE: 200
         }
 
 
-<a id="orgf794b60"></a>
+<a id="org99d2616"></a>
 
 ## Promoting a user
 
@@ -153,7 +179,7 @@ RESPONSE: 200
     {"message": "The user has been promoted!"}
 
 
-<a id="orgc4379ee"></a>
+<a id="org17da2ea"></a>
 
 ## Deleting a user
 
@@ -168,7 +194,7 @@ RESPONSE: 200
     {"message": "The user has been deleted!"}
 
 
-<a id="org199daa1"></a>
+<a id="org3338898"></a>
 
 ## Creating a post
 
@@ -188,7 +214,7 @@ RESPONSE: 200
     {"message": "Post created"}
 
 
-<a id="orgc436b68"></a>
+<a id="org9f1bdf8"></a>
 
 ## Viewing post
 
@@ -205,36 +231,69 @@ RESPONSE: 200
          "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
          "title": "Test thing",
          "url": "https://i.imgur.com/yYGxFJX.jpeg",
-         "user_id": "alskjdf_dfkdjf"}
-       ]
+         "username": "somerandomusername",
+         "posted": true},
+    
+        {"description": null,
+         "id": 27,
+         "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
+         "title": "Test thing",
+         "url": "https://i.imgur.com/yYGxFJX.jpeg",
+         "username": null,
+         "posted": false},   ]
     }
 
 Note: Sometimes user<sub>id</sub>, description can be null.
 
-1.  Viewing Single Post
 
-    ENDPOINT: &ldquo;template/template<sub>id</sub>&rdquo; [GET REQ]
-    
-    You can get template id of post by sending GET req to &ldquo;template&rdquo; endpoint: see above
-    
-        requests.get(URL+"/template/template_id", headers=headers)
-    
-    RESPONSE: 200
-    
-        {"template":
-         {"description": "Done",
-             "id": 27,
-             "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
-             "title": "Test thing",
-             "url": "https://i.imgur.com/yYGxFJX.jpeg",
-             "user_id": "alskjdf_dfkdjf"
-         }
-        }
-    
-    Note: Sometimes user<sub>id</sub>, description can be null too.
+### View filtered post
+
+ENDPOINT: &ldquo;/&rdquo; [GET REQ]
+
+The api provides a way to get approved post (with approved propery set to true + current user&rsquo;s own post) with a single api call.
+
+    requests.get(URL+"/", headers=headers)
+
+RESPONSE: 200
+
+    {"templates": [
+        {"description": "Done",
+         "id": 27,
+         "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
+         "title": "Test thing",
+         "url": "https://i.imgur.com/yYGxFJX.jpeg",
+         "username": "somerandomusername",
+         "posted": true}
+       ]
+    }
+
+Note: Sometimes user<sub>id</sub>, description can be null too.
 
 
-<a id="org35efcf3"></a>
+### Viewing Single Post
+
+ENDPOINT: &ldquo;template/template<sub>id</sub>&rdquo; [GET REQ]
+
+You can get template id of post by sending GET req to &ldquo;template&rdquo; endpoint: see above
+
+    requests.get(URL+"/template/template_id", headers=headers)
+
+RESPONSE: 200
+
+    {"template":
+     {"description": "Done",
+         "id": 27,
+         "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
+         "title": "Test thing",
+         "url": "https://i.imgur.com/yYGxFJX.jpeg",
+         "user_id": "alskjdf_dfkdjf"
+     }
+    }
+
+Note: Sometimes user<sub>id</sub>, description can be null too.
+
+
+<a id="orge33aa79"></a>
 
 ## Updating a post
 
@@ -254,7 +313,7 @@ RESPONSE: 200
     {"message": "Post Updated"}
 
 
-<a id="org392f3b0"></a>
+<a id="org20157c1"></a>
 
 ## Deleting a post
 
@@ -268,14 +327,14 @@ RESPONSE: 200
     {"message": "The post has been deleted"}
 
 
-<a id="orga9733d7"></a>
+<a id="orgf80e681"></a>
 
 # Configuration
 
 All the configs are set in the meme<sub>api</sub>/\_<sub>init</sub>\_<sub>.py</sub> file.
 
 
-<a id="orgc59a945"></a>
+<a id="org4c89045"></a>
 
 ## Installing dependencies
 
@@ -288,7 +347,7 @@ All the configs are set in the meme<sub>api</sub>/\_<sub>init</sub>\_<sub>.py</s
         $ poetry install
 
 
-<a id="org9c22f5a"></a>
+<a id="org66e65a2"></a>
 
 ## Database config
 
@@ -316,7 +375,7 @@ This same config along with example config for hosted sql (eg MYSQL) server is a
     export DB_NAME='name of db and tablename eg. mysqldb$posts'
 
 
-<a id="org2dbc4d5"></a>
+<a id="orgd220898"></a>
 
 ## Database initialization and migration
 
@@ -333,7 +392,7 @@ Run migrate to create the tables required by the models
 Once you make any changes to models you need to migrate & upgrade the database as shown above
 
 
-<a id="org8cf28e5"></a>
+<a id="orgabf824d"></a>
 
 ## Setting up migration for existing database
 
@@ -359,7 +418,7 @@ You are all set. From now, if you make any changes to models you need to migrate
     $ python -m flask db upgrade
 
 
-<a id="orgfca0e17"></a>
+<a id="org8babbe3"></a>
 
 ## Creating an admin user
 
@@ -386,7 +445,7 @@ Only admin users are allowed to create new accounts through api. Thus a admin us
     db.session.commit()
 
 
-<a id="org80ec986"></a>
+<a id="orgec5c26c"></a>
 
 # Application registration tokens
 
@@ -396,7 +455,7 @@ A random uuid is generated and manually put into the meme<sub>api</sub>/apps.py 
 
     #+ apps.py file +
     registered = {
-        'application': 'generated random uuid',
+        'someapp': 'generated random uuid',
         'cli': 'another uuid for another app',
     }
 
@@ -408,14 +467,141 @@ A random uuid is generated and manually put into the meme<sub>api</sub>/apps.py 
 Every routes including login now requires above &rsquo;x-application-token&rsquo; header for the request to be successful.
 
 
-<a id="orgfc6484c"></a>
+<a id="orgde17485"></a>
 
 # Loosening other routes
 
 With application based authentication in place, the routes for creating new user, getting all posts etc can be loosened to not require an admin token.
 
 
-<a id="orgece8575"></a>
+<a id="org3814e33"></a>
+
+# Useful tools
+
+There are many good tools to leverage understanding of how api&rsquo;s and http requests work.
+
+
+<a id="org4683aa9"></a>
+
+## [Httpie](https://github.com/httpie/httpie)
+
+-   CLI tools for testing, debugging API endpoints.
+
+
+<a id="orgbbd8ff1"></a>
+
+## Httpbin.org:
+
+-   An dedicated website which provides post, delete, put etc endpoints in httpbin.org/post, /delete respectivly. Returns all the headers and data info it got in nice json format.
+    -   Great partner tool with httpie
+
+
+<a id="orgd94974e"></a>
+
+## Postman (and similar others)
+
+-   Exploring, testing endpoints with diffrent kinds of requests in a friendly UI. Helps creating a test suite.
+
+
+<a id="org91cf6ff"></a>
+
+# Inner details
+
+
+<a id="org79da42f"></a>
+
+## What requests&ldquo; BasicHTTPAuth does
+
+    import requests
+    from requests.auth import HTTPBasicAuth
+    
+    URL = "https://httpbin.org"
+    auth = HTTPBasicAuth("username", "password")
+    
+    login_response = requests.post(URL+"/post", auth=auth)
+    
+    print(login_response.json())
+
+Response
+
+    {"args": {},
+     "data": "",
+     "files": {},
+     "form": {},
+     "headers": {"Accept": "*/*",
+                 "Accept-Encoding": "gzip, deflate",
+                 "Authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+                 "Content-Length": "0",
+                 "Host": "httpbin.org",
+                 "User-Agent": "python-requests/2.24.0",
+                 "X-Amzn-Trace-Id": "Root=1-5f8aee35-211905107cfea23a2ad3b865"},
+     "json": null,
+     "origin": "35.229.170.146",
+     "url": "https://httpbin.org/post"}
+
+What we are interested in is the Authorization header. Basically the requests transformed the username and password to base64 encoded string and passed the header.
+
+    header = {
+        "Authorization": "Basic " + Base64encoded(username + ":" + password)
+    }
+
+So instead of passing auth arg we can also create this authorization header ourself and should get the same result
+
+
+### Implementing own auth header
+
+    import requests
+    import base64
+    
+    URL = "httpbin.org/post"
+    token = base64.b64encode(bytes("username:pass", "utf-8"))
+    headers  = {"Authorization": f"Basic {token.decode()}"}
+    response = requests.get(URL, headers=headers)
+    
+    print(response.json())
+
+    {"args": {},
+     "data": "",
+     "files": {},
+     "form": {},
+     "headers": {"Accept": "*/*",
+                 "Accept-Encoding": "gzip, deflate",
+                 "Authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+                 "Content-Length": "0",
+                 "Host": "httpbin.org",
+                 "User-Agent": "python-requests/2.24.0",
+                 "X-Amzn-Trace-Id": "Root=1-5f8af1bb-716f15011a1b61770e118a7f"},
+     "json": null,
+     "origin": "35.229.170.146",
+     "url": "https://httpbin.org/post"}
+
+
+<a id="org959a991"></a>
+
+## Diffrent ways to get request data in flask
+
+Ref: [stackoverflow page](https://stackoverflow.com/questions/10434599/get-the-data-received-in-a-flask-request)
+
+-   request.data : used for fallback data storage mostly empty
+
+-   request.args: the key/value pairs in the URL query string
+
+-   request.form:
+    the key/value pairs in the body, from a HTML post form, or JavaScript request that isn&rsquo;t JSON encoded
+
+-   request.files:
+     the files in the body, which Flask keeps separate from form. HTML forms must
+    use enctype=multipart/form-data or files will not be uploaded.
+
+-   request.values:
+    combined args and form, preferring args if keys overlap
+
+-   request.json:
+    parsed JSON data. The request must have the application/json content type, or
+    use request.get<sub>json</sub>(force=True) to ignore the content type.
+
+
+<a id="org40dc78b"></a>
 
 # TODOS
 
