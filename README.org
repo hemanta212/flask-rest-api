@@ -37,6 +37,10 @@ This is a simple implementation of flask api with JWT(JSON WEB TOKENS). You get 
   - [[#httpie][Httpie]]
   - [[#httpbinorg][Httpbin.org:]]
   - [[#postman-and-similar-others][Postman (and similar others)]]
+- [[#inner-details][Inner details]]
+  - [[#rolling-custom-decoraters-in-flask][Rolling custom decoraters in flask]]
+  - [[#what-requests-basichttpauth-does][What requests' BasicHTTPAuth does]]
+  - [[#diffrent-ways-to-get-request-data-in-flask][Diffrent ways to get request data in flask]]
 - [[#todos][TODOS]]
 
 * Implementation Features
@@ -451,6 +455,72 @@ There are many good tools to leverage understanding of how api's and http reques
 
 ** Postman (and similar others)
 - Exploring, testing endpoints with diffrent kinds of requests in a friendly UI. Helps creating a test suite.
+
+* Inner details
+** Rolling custom decoraters in flask
+**** Aplying multiple decoraters in python
+#+BEGIN_SRC python
+def top_level_decorater(func):
+    def inner_func():
+        print("high level wrapper")
+        value = func()
+        print("high level wrap end")
+        return value
+    return inner_func
+
+def first_level_decorater(func):
+    def my_inner_func():
+        print("low level wrapper")
+        value = func()
+        print("low level wrap end")
+        return value
+    return my_inner_func
+
+@top_level_decorater
+@first_level_decorater
+def some_func():
+   print("main func processing")
+
+some_func()
+#+END_SRC
+Here the some_func function is first modified by low_level_decorater and then by high_level_decorater. The function is refined tow times. The above code is equivalent to doing.
+#+BEGIN_SRC
+my_inner_func = first_level_decorater(some_func)
+inner_func = top_level_decorater(my_inner_func)
+inner_func()
+#+END_SRC
+
+**** Utilizing multi decoraters to steal scope data
+#+BEGIN_SRC python
+private_data = dict()
+
+def top_level_decorater(func):
+    def inner_func():
+        private_data = {'test': '123'}
+        return func()
+    return inner_func
+
+def first_level_decorater(func):
+    def my_inner_func():
+        stolen_data = private_data['test']
+        print(stolen_data)
+        return func()
+    return my_inner_func
+
+@top_level_decorater
+@first_level_decorater
+def some_func():
+   print("main func processing")
+
+some_func()
+#+END_SRC
+
+#+RESULTS:
+
+
+
+** What requests' BasicHTTPAuth does
+** Diffrent ways to get request data in flask
 
 * TODOS
 **** [ ] Add Tests
