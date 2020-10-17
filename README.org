@@ -5,6 +5,16 @@ This is a simple implementation of flask api with JWT(JSON WEB TOKENS). You get 
 
 #+TOC: headlines 2
 * Table of contents :toc:
+- [[#implementation-features][Implementation Features]]
+  - [[#rolling-out-custom-flask-decorators][Rolling out custom flask decorators]]
+  - [[#token-based-auth-with-jwt][Token based auth with jwt]]
+  - [[#custom-application-registering-and-separate-client-tokens][Custom application registering and separate client tokens]]
+  - [[#http-basic-usernamepass-authentication][Http Basic username:pass authentication]]
+  - [[#flask-blueprinting-for-modularization][Flask blueprinting for modularization]]
+  - [[#flask-database-migration][Flask database migration.]]
+  - [[#supports-postgres-sql-sqlite-etc-dbs-with-sqlalchemy][Supports postgres, sql, sqlite etc dbs with sqlalchemy]]
+  - [[#returning-diffrent-http-status-codes][Returning diffrent http status codes]]
+  - [[#some-common-short-flask-tricks][Some common short flask tricks]]
 - [[#usage][Usage]]
   - [[#login-and-get-a-token][Login and get a token]]
   - [[#creating-a-user][Creating a user]]
@@ -23,7 +33,26 @@ This is a simple implementation of flask api with JWT(JSON WEB TOKENS). You get 
   - [[#creating-an-admin-user][Creating an admin user]]
 - [[#application-registration-tokens][Application registration tokens]]
 - [[#loosening-other-routes][Loosening other routes]]
+- [[#useful-tools][Useful tools]]
+  - [[#httpie][Httpie]]
+  - [[#httpbinorg][Httpbin.org:]]
+  - [[#postman-and-similar-others][Postman (and similar others)]]
 - [[#todos][TODOS]]
+
+* Implementation Features
+** Rolling out custom flask decorators
+** Token based auth with jwt
+** Custom application registering and separate client tokens
+** Http Basic username:pass authentication
+** Flask blueprinting for modularization
+** Flask database migration.
+** Supports postgres, sql, sqlite etc dbs with sqlalchemy
+** Returning diffrent http status codes
+** Some common short flask tricks
+**** Defining same routes with diffrent methods to reduce if/else nests
+**** Returning python string, dicts autogenerates a json response (no need jsonify)
+**** Calling .app_context().push() on flask app instance
+- Helps a ton in intrepreter to play with db and stuff without initializing
 
 * Usage
 This api has user and post tables in db. Every routes relating to 'user' and 'post' requires a token in the header which can be obtained by logging in throgh login route.
@@ -194,13 +223,44 @@ RESPONSE: 200
      "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
      "title": "Test thing",
      "url": "https://i.imgur.com/yYGxFJX.jpeg",
-     "user_id": "alskjdf_dfkdjf"}
-   ]
+     "username": "somerandomusername",
+     "posted": true},
+
+    {"description": null,
+     "id": 27,
+     "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
+     "title": "Test thing",
+     "url": "https://i.imgur.com/yYGxFJX.jpeg",
+     "username": null,
+     "posted": false},   ]
 }
 #+END_SRC
 Note: Sometimes user_id, description can be null.
 
-**** Viewing Single Post
+*** View filtered post
+ENDPOINT: "/" [GET REQ]
+
+The api provides a way to get approved post (with approved propery set to true + current user's own post) with a single api call.
+#+BEGIN_SRC python
+requests.get(URL+"/", headers=headers)
+#+END_SRC
+
+RESPONSE: 200
+#+BEGIN_SRC json
+{"templates": [
+    {"description": "Done",
+     "id": 27,
+     "posted": "Mon, 12 Oct 2020 04:51:27 GMT",
+     "title": "Test thing",
+     "url": "https://i.imgur.com/yYGxFJX.jpeg",
+     "username": "somerandomusername",
+     "posted": true}
+   ]
+}
+#+END_SRC
+Note: Sometimes user_id, description can be null too.
+
+*** Viewing Single Post
 ENDPOINT: "template/template_id" [GET REQ]
 
 You can get template id of post by sending GET req to "template" endpoint: see above
@@ -365,7 +425,7 @@ A random uuid is generated and manually put into the meme_api/apps.py file. This
 #+BEGIN_SRC python
 #+ apps.py file +
 registered = {
-    'application': 'generated random uuid',
+    'someapp': 'generated random uuid',
     'cli': 'another uuid for another app',
 }
 #+END_SRC
@@ -380,6 +440,17 @@ Every routes including login now requires above 'x-application-token' header for
 
 * Loosening other routes
 With application based authentication in place, the routes for creating new user, getting all posts etc can be loosened to not require an admin token.
+
+* Useful tools
+There are many good tools to leverage understanding of how api's and http requests work.
+** [[https://github.com/httpie/httpie][Httpie]]
+- CLI tools for testing, debugging API endpoints.
+** Httpbin.org:
+- An dedicated website which provides post, delete, put etc endpoints in httpbin.org/post, /delete respectivly. Returns all the headers and data info it got in nice json format.
+ - Great partner tool with httpie
+
+** Postman (and similar others)
+- Exploring, testing endpoints with diffrent kinds of requests in a friendly UI. Helps creating a test suite.
 
 * TODOS
 **** [ ] Add Tests
