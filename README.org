@@ -38,7 +38,7 @@ This is a simple implementation of flask api with JWT(JSON WEB TOKENS). You get 
   - [[#httpbinorg][Httpbin.org:]]
   - [[#postman-and-similar-others][Postman (and similar others)]]
 - [[#inner-details][Inner details]]
-  - [[#what-requests-basichttpauth-does][What requests' BasicHTTPAuth does]]
+  - [[#what-requests-basichttpauth-does][What requests" BasicHTTPAuth does]]
   - [[#diffrent-ways-to-get-request-data-in-flask][Diffrent ways to get request data in flask]]
 - [[#todos][TODOS]]
 
@@ -456,7 +456,75 @@ There are many good tools to leverage understanding of how api's and http reques
 - Exploring, testing endpoints with diffrent kinds of requests in a friendly UI. Helps creating a test suite.
 
 * Inner details
-** What requests' BasicHTTPAuth does
+** What requests" BasicHTTPAuth does
+#+BEGIN_SRC python
+import requests
+from requests.auth import HTTPBasicAuth
+
+URL = "https://httpbin.org"
+auth = HTTPBasicAuth("username", "password")
+
+login_response = requests.post(URL+"/post", auth=auth)
+
+print(login_response.json())
+#+END_SRC
+
+Response
+#+BEGIN_SRC json
+{"args": {},
+ "data": "",
+ "files": {},
+ "form": {},
+ "headers": {"Accept": "*/*",
+             "Accept-Encoding": "gzip, deflate",
+             "Authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+             "Content-Length": "0",
+             "Host": "httpbin.org",
+             "User-Agent": "python-requests/2.24.0",
+             "X-Amzn-Trace-Id": "Root=1-5f8aee35-211905107cfea23a2ad3b865"},
+ "json": None,
+ "origin": "35.229.170.146",
+ "url": "https://httpbin.org/post"}
+ #+END_SRC
+
+ What we are interested in is the Authorization header. Basically the requests transformed the username and password to base64 encoded string and passed the header.
+ #+BEGIN_SRC python
+ header = {
+     "Authorization": "Basic " + Base64encoded(username + ":" + password)
+ }
+ #+END_SRC
+
+ So instead of passing auth arg we can also create this authorization header ourself and should get the same result
+
+*** Implementing own auth header
+#+BEGIN_SRC python
+import requests
+import base64
+
+URL = "httpbin.org/post"
+token = base64.b64encode(bytes("username:pass", "utf-8"))
+headers  = {"Authorization": f"Basic {token.decode()}"}
+response = requests.get(URL, headers=headers)
+
+print(response.json())
+#+END_SRC
+#+BEGIN_SRC json
+{"args": {},
+ "data": "",
+ "files": {},
+ "form": {},
+ "headers": {"Accept": "*/*",
+             "Accept-Encoding": "gzip, deflate",
+             "Authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+             "Content-Length": "0",
+             "Host": "httpbin.org",
+             "User-Agent": "python-requests/2.24.0",
+             "X-Amzn-Trace-Id": "Root=1-5f8af1bb-716f15011a1b61770e118a7f"},
+ "json": null,
+ "origin": "35.229.170.146",
+ "url": "https://httpbin.org/post"}
+#+END_SRC
+
 ** Diffrent ways to get request data in flask
 
 * TODOS
