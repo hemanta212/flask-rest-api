@@ -3,13 +3,14 @@ from flask import request, Blueprint
 
 from meme_api import db
 from meme_api.models import MemeTemplate
-from meme_api.utils import token_required
+from meme_api.utils import token_required, registration_required
 
 meme_template = Blueprint("meme_template", __name__)
 
 
 @meme_template.route("/", methods=["GET"])
 @token_required
+@registration_required
 def get_approved_templates(current_user):
     """
     Gives all the approved templates + user's own templates regardless of approval status
@@ -28,6 +29,7 @@ def get_approved_templates(current_user):
 
 @meme_template.route("/template", methods=["GET"])
 @token_required
+@registration_required
 def get_all_templates(current_user):
     meme_templates = MemeTemplate.query.all()
     output = [template.to_dict() for template in meme_templates]
@@ -36,6 +38,7 @@ def get_all_templates(current_user):
 
 @meme_template.route("/template/<template_id>", methods=["GET"])
 @token_required
+@registration_required
 def get_one_template(current_user, template_id):
     template = MemeTemplate.query.filter_by(id=template_id).first()
     if not template:
@@ -45,6 +48,7 @@ def get_one_template(current_user, template_id):
 
 @meme_template.route("/template", methods=["POST"])
 @token_required
+@registration_required
 def create_template(current_user):
     data = request.form
     title, description, url = (
@@ -70,6 +74,7 @@ def create_template(current_user):
 
 @meme_template.route("/template/<template_id>", methods=["PUT"])
 @token_required
+@registration_required
 def complete_template(current_user, template_id):
     data = request.form
     title, description, url = (

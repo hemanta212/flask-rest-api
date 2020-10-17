@@ -1,0 +1,4 @@
+registered = {
+    "application": "",
+    "cli": "",
+}

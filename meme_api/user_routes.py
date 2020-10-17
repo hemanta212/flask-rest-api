@@ -12,13 +12,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from meme_api import db
 from meme_api.models import User
-from meme_api.utils import token_required
+from meme_api.utils import token_required, registration_required
 
 users = Blueprint("users", __name__)
 
 
 @users.route("/user", methods=["GET"])
 @token_required
+@registration_required
 def get_all_users(current_user):
     if not current_user.admin:
         return {"message": "Cannot perform that function!"}, 403
@@ -29,6 +30,7 @@ def get_all_users(current_user):
 
 @users.route("/user/<public_id>", methods=["GET"])
 @token_required
+@registration_required
 def get_one_user(current_user, public_id):
     if not current_user.admin:
         return {"message": "Cannot perform that function!"}, 403
@@ -41,9 +43,8 @@ def get_one_user(current_user, public_id):
 
 @users.route("/user", methods=["POST"])
 @token_required
+@registration_required
 def create_user(current_user):
-    if not current_user.admin:
-        return {"message": "Cannot perform that function!"}, 403
     data = request.form
 
     username, password = data.get("username"), data.get("password")
@@ -64,6 +65,7 @@ def create_user(current_user):
 
 @users.route("/user/<public_id>", methods=["PUT"])
 @token_required
+@registration_required
 def promote_user(current_user, public_id):
     if not current_user.admin:
         return {"message": "Cannot perform that function!"}, 403
@@ -79,6 +81,7 @@ def promote_user(current_user, public_id):
 
 @users.route("/user/<public_id>", methods=["DELETE"])
 @token_required
+@registration_required
 def delete_user(current_user, public_id):
     if not current_user.admin:
         return {"message": "Cannot perform that function!"}, 403
@@ -93,6 +96,7 @@ def delete_user(current_user, public_id):
 
 
 @users.route("/login")
+@registration_required
 def login():
     auth = request.authorization
     if not auth or not auth.username or not auth.password:
